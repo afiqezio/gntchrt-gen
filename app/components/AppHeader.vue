@@ -7,9 +7,6 @@
       </div>
 
       <div class="inline-flex items-center gap-2">
-        <button class="px-3 py-1.5 rounded-lg text-zinc-700 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-900/60">
-          Share
-        </button>
         <button class="px-3 py-1.5 rounded-lg bg-brand hover:bg-brand-700 text-white" @click="openAdd">
           + Add Task
         </button>

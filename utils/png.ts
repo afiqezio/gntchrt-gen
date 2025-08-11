@@ -1,16 +1,60 @@
-export async function downloadElementAsPng(el: HTMLElement, filename = 'export.png') {
+export async function downloadElementAsPng(el: HTMLElement, filename = 'gantt.png') {
+  if (typeof window === 'undefined' || !el) return
+
+  const width = Math.ceil(el.scrollWidth || el.getBoundingClientRect().width)
+  const height = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height)
+  const pixelRatio = Math.min(2, window.devicePixelRatio || 1)
+  const bg = getComputedStyle(document.body).backgroundColor || '#ffffff'
+
+  try {
+    // Prefer robust DOM rasterization with full-size capture
+    const { toBlob } = await import('html-to-image')
+    const blob = await toBlob(el, {
+      backgroundColor: bg,
+      pixelRatio,
+      width,
+      height,
+      style: {
+        width: width + 'px',
+        height: height + 'px',
+      },
+      cacheBust: true,
+    })
+    if (blob) {
+      triggerDownload(blob, filename)
+      return
+    }
+  } catch {
+    // fall through to foreignObject fallback
+  }
+
+  // Fallback: foreignObject approach (less reliable with some CSS, but works offline)
+  const blob = await fallbackForeignObject(el, { width, height, pixelRatio, background: bg })
+  if (blob) triggerDownload(blob, filename)
+}
+
+function triggerDownload(blob: Blob, filename: string) {
+  const a = document.createElement('a')
+  const url = URL.createObjectURL(blob)
+  a.href = url
+  a.download = filename
+  document.body.appendChild(a)
+  a.click()
+  a.remove()
+  URL.revokeObjectURL(url)
+}
+
+async function fallbackForeignObject(
+  el: HTMLElement,
+  opts: { width: number; height: number; pixelRatio: number; background: string }
+): Promise<Blob | null> {
+  const { width, height, pixelRatio, background } = opts
   const svgNS = 'http://www.w3.org/2000/svg'
   const xhtmlNS = 'http://www.w3.org/1999/xhtml'
 
-  // Use scroll size to capture full content, not just visible box
-  const width = Math.ceil(el.scrollWidth || el.getBoundingClientRect().width)
-  const height = Math.ceil(el.scrollHeight || el.getBoundingClientRect().height)
-
-  const xml = new XMLSerializer()
   const clone = el.cloneNode(true) as HTMLElement
   inlineStyles(clone)
 
-  // Ensure clone has the same dimensions
   clone.style.width = width + 'px'
   clone.style.height = height + 'px'
 
@@ -18,6 +62,7 @@ export async function downloadElementAsPng(el: HTMLElement, filename = 'export.p
   svg.setAttribute('xmlns', svgNS)
   svg.setAttribute('width', String(width))
   svg.setAttribute('height', String(height))
+  svg.setAttribute('viewBox', `0 0 ${width} ${height}`)
 
   const fo = document.createElementNS(svgNS, 'foreignObject')
   fo.setAttribute('width', String(width))
@@ -32,39 +77,26 @@ export async function downloadElementAsPng(el: HTMLElement, filename = 'export.p
   fo.appendChild(wrapper)
   svg.appendChild(fo)
 
-  const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml.serializeToString(svg))
+  const xml = new XMLSerializer().serializeToString(svg)
+  const data = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(xml)
   const img = new Image()
+
   await new Promise<void>((resolve, reject) => {
     img.onload = () => resolve()
     img.onerror = reject
     img.src = data
   })
 
-  // Improve quality on HiDPI
-  const scale = Math.min(2, window.devicePixelRatio || 1)
   const canvas = document.createElement('canvas')
-  canvas.width = Math.ceil(width * scale)
-  canvas.height = Math.ceil(height * scale)
+  canvas.width = Math.ceil(width * pixelRatio)
+  canvas.height = Math.ceil(height * pixelRatio)
   const ctx = canvas.getContext('2d')!
-
-  // Background fill (fallback to body background or white)
-  const bg = getComputedStyle(document.body).backgroundColor || '#ffffff'
-  ctx.fillStyle = bg
+  ctx.fillStyle = background
   ctx.fillRect(0, 0, canvas.width, canvas.height)
-
-  ctx.setTransform(scale, 0, 0, scale, 0, 0)
+  ctx.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0)
   ctx.drawImage(img, 0, 0)
 
-  const blob = await new Promise<Blob | null>(r => canvas.toBlob(r))
-  if (!blob) return
-  const a = document.createElement('a')
-  const url = URL.createObjectURL(blob)
-  a.href = url
-  a.download = filename
-  document.body.appendChild(a)
-  a.click()
-  a.remove()
-  URL.revokeObjectURL(url)
+  return await new Promise<Blob | null>(r => canvas.toBlob(r))
 }
 
 function inlineStyles(element: HTMLElement) {
@@ -77,5 +109,3 @@ function inlineStyles(element: HTMLElement) {
     inlineStyles(child as HTMLElement)
   }
 }
-
-
