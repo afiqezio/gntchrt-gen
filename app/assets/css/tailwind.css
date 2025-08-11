@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+  body { @apply bg-zinc-950 text-zinc-100; }
+}
+
+@layer components {
+  .card { @apply rounded-2xl border border-zinc-800/80 bg-zinc-900/40 p-5; }
+  .container-px { @apply max-w-6xl mx-auto px-6; }
+}
+
