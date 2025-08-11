@@ -22,8 +22,13 @@
                 <input type="date" v-model="form.start" class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-zinc-800/80 dark:bg-zinc-900/40" />
               </div>
               <div>
-                <label class="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">Duration</label>
-                <input v-model="form.duration" class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-zinc-800/80 dark:bg-zinc-900/40" placeholder="e.g. 10d, 2w, 1m" />
+                <label class="block text-sm text-zinc-600 dark:text-zinc-400 mb-1">End date</label>
+                <input
+                  type="date"
+                  v-model="form.end"
+                  :min="form.start || undefined"
+                  class="w-full rounded-xl border border-zinc-200 bg-white px-3 py-2 outline-none focus:ring-2 focus:ring-indigo-500/40 dark:border-zinc-800/80 dark:bg-zinc-900/40"
+                />
               </div>
             </div>
 
@@ -52,24 +57,36 @@
 <script setup lang="ts">
 import { reactive, computed, watch } from 'vue'
 import { useGantt } from '../../composables/useGantt'
+import { daysBetween } from '../../utils/date'
 
 const { isAddOpen: isOpen, closeAdd: close, addTask } = useGantt()
 
-const empty = () => ({ name: '', start: '', duration: '', owner: '', dependsOn: undefined as number | undefined })
+const empty = () => ({ name: '', start: '', end: '', owner: '', dependsOn: undefined as number | undefined })
 const form = reactive(empty())
 
 watch(isOpen, (v) => { if (v) Object.assign(form, empty()) })
 
-const canSave = computed(() =>
-  !!form.name && !!form.start && !!form.duration
-)
+watch(() => form.start, (s) => {
+  if (!s) return
+  if (!form.end || new Date(form.end) < new Date(s)) form.end = s
+})
+
+const canSave = computed(() => {
+  if (!form.name || !form.start || !form.end) return false
+  const s = new Date(form.start)
+  const e = new Date(form.end)
+  return !Number.isNaN(s.getTime()) && !Number.isNaN(e.getTime()) && e >= s
+})
 
 function save() {
   if (!canSave.value) return
+  const s = new Date(form.start)
+  const e = new Date(form.end)
+  const durationDays = Math.max(1, daysBetween(s, e) + 1)
   addTask({
     name: form.name.trim(),
     start: form.start,
-    duration: form.duration.trim(),
+    duration: `${durationDays}d`,
     owner: form.owner?.trim() || undefined,
     dependsOn: form.dependsOn || undefined,
   })
