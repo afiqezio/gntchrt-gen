@@ -1,10 +1,8 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
+  srcDir: 'app/',
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   modules: ['@nuxtjs/tailwindcss'],
-  css: ['@/assets/css/tailwind.css'],
-  components: {
-    dirs: ['~/app/components']
-  }
+  css: ['@/assets/css/tailwind.css']
 })

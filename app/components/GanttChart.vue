@@ -1,20 +1,20 @@
 <template>
-  <div ref="containerRef" class="grid rounded-2xl overflow-hidden border border-zinc-800 bg-zinc-900/40" :style="{ '--row-height': rowHeight + 'px' }">
-    <div class="grid grid-flow-col auto-cols-[minmax(48px,auto)] gap-0 px-3 py-2 border-b border-zinc-800 text-zinc-400 text-xs">
+  <div id="gantt-canvas" ref="containerRef" class="w-full rounded-2xl overflow-auto border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40" :style="{ '--row-height': rowHeight + 'px' }">
+    <div class="grid grid-flow-col auto-cols-[minmax(64px,auto)] gap-0 px-3 py-2 border-b border-zinc-200 dark:border-zinc-800 text-zinc-500 dark:text-zinc-400 text-xs min-w-max">
       <div class="text-center" v-for="tick in timelineTicks" :key="tick.key">
         {{ tick.label }}
       </div>
     </div>
-    <div class="grid">
-      <div v-for="task in tasks" :key="task.id" class="grid grid-cols-[200px_1fr] min-h-[var(--row-height)] border-b border-dashed border-zinc-800">
-        <div class="px-3 py-2 flex items-center">{{ task.name }}</div>
+    <div class="grid min-w-max">
+      <div v-for="task in tasks" :key="task.id" class="grid grid-cols-[240px_1fr] min-h-[var(--row-height)] border-b border-dashed border-zinc-200 dark:border-zinc-800">
+        <div class="px-3 py-2 flex items-center text-sm">{{ task.name }}</div>
         <div class="relative px-3 py-2">
           <div
             class="absolute top-0 text-white rounded-lg shadow-subtle flex items-center justify-center text-[12px] bg-gradient-to-b from-indigo-500 to-indigo-600"
             :style="barStyle(task)"
             :title="task.name + ' (' + formatDate(task.start) + ' → ' + formatDate(task.end) + ')'"
           >
-            <span class="opacity-90">{{ task.owner }}</span>
+            <span class="opacity-90 px-2 truncate">{{ task.owner }}</span>
           </div>
         </div>
       </div>
@@ -23,18 +23,18 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted } from 'vue'
+import { computed, ref } from 'vue'
 import type { GanttTask, ViewMode } from '../../types/gantt'
 import { daysBetween, startOfUnit, endOfUnit, formatDate } from '../../utils/date'
 
 const props = defineProps<{ tasks: GanttTask[]; viewMode: ViewMode }>()
 
 const containerRef = ref<HTMLElement | null>(null)
-const rowHeight = 40
+const rowHeight = 56
 const pxPerDay = computed(() => {
-  if (props.viewMode === 'day') return 24
-  if (props.viewMode === 'week') return 8
-  return 2.5 // month
+  if (props.viewMode === 'day') return 32
+  if (props.viewMode === 'week') return 12
+  return 4 // month
 })
 
 const minDate = computed(() => startOfUnit(Math.min(...props.tasks.map(t => t.start.getTime())), props.viewMode))
@@ -78,10 +78,6 @@ function getWeekNumber(d: Date) {
   const yearStart = new Date(Date.UTC(date.getUTCFullYear(), 0, 1))
   return Math.ceil((((date as any) - (yearStart as any)) / 86400000 + 1) / 7)
 }
-
-onMounted(() => {
-  // placeholder if we want to measure container size
-})
 
 defineExpose({ formatDate })
 </script>
