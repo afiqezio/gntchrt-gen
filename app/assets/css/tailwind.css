@@ -14,7 +14,7 @@
 
 @layer components {
   .card { @apply rounded-2xl border border-zinc-200 bg-white p-5 dark:border-zinc-800/80 dark:bg-zinc-900/40; }
-  .container-px { @apply px-6; }
+  .container-px { @apply w-full px-6; }
   .sidebar-link { @apply px-3 py-2 rounded-lg text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-100 dark:hover:bg-zinc-900/60 transition-colors; }
   .active-link { @apply text-zinc-900 bg-zinc-100 dark:text-zinc-100 dark:bg-zinc-900/60; }
   .pill { @apply text-xs px-2.5 py-1 rounded-full bg-zinc-200 text-zinc-800 dark:bg-zinc-800 dark:text-zinc-100; }
